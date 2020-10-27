@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: hello-aspnetcore-service
+spec:
+  selector:
+    # same as pod name in deployment.yml file
+    app: hello-aspnetcore-pod
+  ports:
+  # Port exposed by the service
+  - port: 8080
+    # Internal container port targeted by the service (Same as containerPort in deployment.yml)
+    targetPort: 80
+  # Instruct Kubernetes to Allow public access via it's load balancer
+  type: LoadBalancer

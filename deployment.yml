@@ -14,7 +14,10 @@ spec:
     spec:
       containers:
       - name: hello-aspnetcore-container      
-        image: hello-aspnetcore:v1
+        # Image local to Docker
+        #image: hello-aspnetcore:v1
+        # Image in Azure Contrainer Registry
+        image: emmanuelm777containerregistry.azurecr.io/hello-aspnetcore:v1
         resources:
           limits:
             # 128 Megabytes
