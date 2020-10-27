@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hello-aspnetcore-deployment  
+spec:
+  # Describe which kubernetes pods are going to be targeted by this deployment
+  selector:
+    matchLabels:
+      app: hello-aspnetcore-pod      
+  template:
+    metadata:
+      labels:
+        app: hello-aspnetcore-pod        
+    spec:
+      containers:
+      - name: hello-aspnetcore-container      
+        image: hello-aspnetcore:v1
+        resources:
+          limits:
+            # 128 Megabytes
+            memory: "128Mi"
+            # Equivalent to 0.5 CPU (Half a CPU)
+            cpu: "500m"
+        ports:
+        - containerPort: 80
