@@ -9,10 +9,10 @@
 # Run the image using the following commandline:
 # docker run -it --rm -p 8080:80 hello-aspnetcore:v1
 # The -it switch is to specify the interactive mode
-# The --rm swith is to specify that the image should be removed after the application has finisghed running
+# The --rm swith is to specify that the container should be removed/discarded after the application has finisghed running
 # The -p swith is to specific the port mapping so the the app is accessible via port 8080
 
-# Optimaized Base image definition (smaller image with only the files required to run the app)
+# Optimized Base image definition (smaller image with only the files required to run the app)
 FROM mcr.microsoft.com/dotnet/core/aspnet:3.1 AS base
 # Set Working directory
 WORKDIR /app
