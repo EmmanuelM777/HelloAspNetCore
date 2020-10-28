@@ -6,80 +6,116 @@
 trigger:
 - main
 
-# Removed (from the generated yaml)
+# Removed 
+# Origibated from the generated yaml when creating this file via the Configure step of 
+# the New Pipeline wizard where the 'Deploy to Azure Kubernetes Service' mini wizard was used
 #resources:
 #- repo: self
 
-# Reusable variables
+# Set variables
 variables:
 
   # Container registry service connection established during pipeline creation
   dockerRegistryServiceConnection: '1f223625-731a-478e-ae3e-e512a05a0d39'
+  # What the docker image should be named
   imageRepository: 'hello-aspnetcore'
+  # The name of the container registry manually created in Azure
   containerRegistry: 'emmanuelm777containerregistry.azurecr.io'
+  # miminmatch pattern to the Dockerfile **/ so that Dockerfile could be in any directory
   dockerfilePath: '**/Dockerfile'
-  tag: '$(Build.BuildId)'
-  # Removed since we have set up a service principle
+  # The tag for the build. Options BuildId or BuildNumber
+  # tag: '$(Build.BuildId)'
+  tag: '$(Build.BuildNumber)'
+  # Removed this auto generated line since we have set up a service principle and thus won't need to use an image pull secret
   #magePullSecret: 'emmanuelm777containerregistry00fe-auth'
 
   # Agent VM image name
   vmImageName: 'ubuntu-latest'
   
-
+# The various stages of the pipeline (This is a Multi stage pipline)
 stages:
+# The Build stage  
 - stage: Build
   displayName: Build stage
+  # The jobs in this stage
   jobs:  
+  # The Build job
   - job: Build
     displayName: Build
+    # The pool for the agent machine that will run the build
     pool:
+      # As per vmImageName variable specified in the variables block
       vmImage: $(vmImageName)
+    # The steps in this job
     steps:
+    # This is a Docker task
     - task: Docker@2
-      displayName: Build and push an image to container registry
+      displayName: Build and push image to container registry
       inputs:
+        # This task is instructed to build then push the docker image to container registry
         command: buildAndPush
+        # Build image name as as per imageRepository variable specified in the variables block
         repository: $(imageRepository)
+        # As per dockerfilePath variable specified in the variables block (to be able to file the Dockerfile)
         dockerfile: $(dockerfilePath)
+        # As per dockerRegistryServiceConnection variable specified in the variables block
         containerRegistry: $(dockerRegistryServiceConnection)
         tags: |
           $(tag)
           
+    # Find manifests folder, execute yaml files within it and publish as an artifact 
     - publish: manifests
       artifact: manifests
 
+# The Deploy stage
 - stage: Deploy
   displayName: Deploy stage
+  # This stage depends on the build stage to be completed
   dependsOn: Build
-
+  # The jobs in this stage
   jobs:
+  # The Deploy job  
   - deployment: Deploy
     displayName: Deploy
+    # The pool for the agent machine that will execute the deploy
     pool:
+      # As per vmImageName variable specified in the variables block
       vmImage: $(vmImageName)
+    # The name of the environment that was created as part of the 'Deploy to Azure Kubernetes Service' mini wizard 
+    # during the initial pipeline configuration in Azure DevOps
+    # Environment is where approval can be added to gate the delivery of the deployment:
+    # for this go to AzureDevops -> Project -> Environment -> click on the environment -> ... -> Approvals and Checks
     environment: 'EmmanuelM777HelloAspNetCore.default'
+    # Specifies how to roll out the changes to the deployment environment
     strategy:
+      # runOnce is a sequential strategy (as opposed to Canary or Rolling strategies) wherein all the lifecycle hooks, namely
+      # preDeploy deploy, routeTraffic, and postRouteTraffic, are executed once. Then, either on: success or on: failure is executed.
       runOnce:
         deploy:
+          # The steps for the deployment
           steps:
-          # Removed since we have set up a service principle
+          # Removed this auto generated block since we have set up a service principle and thus won't need to use an image pull secret
           #- task: KubernetesManifest@0
           #  displayName: Create imagePullSecret
           #  inputs:
           #    action: createSecret
           #    secretName: $(imagePullSecret)
           #    dockerRegistryEndpoint: $(dockerRegistryServiceConnection)
-              
+          
+          # Task to deploy to the Kubernetes cluster in AKS
           - task: KubernetesManifest@0
             displayName: Deploy to Kubernetes cluster
             inputs:
+              # Task of type deploy
               action: deploy
+              # Specify which manifests artifact to download
               manifests: |
                 $(Pipeline.Workspace)/manifests/deployment.yml
                 $(Pipeline.Workspace)/manifests/service.yml
               # Removed since we have set up a service principle
               #imagePullSecrets: |
               #  $(imagePullSecret)
+              # Which the container image to use for the deployment (concatenation of variable declared in the variables block)
               containers: |
                 $(containerRegistry)/$(imageRepository):$(tag)
 
